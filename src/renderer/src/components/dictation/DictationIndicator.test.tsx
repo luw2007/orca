@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DictationState } from '../../../../shared/speech-types'
 import { DICTATION_CONTROL_EVENT, type DictationControlAction } from './dictation-control-events'
@@ -23,10 +24,13 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
 
+// Why: the real TooltipContent portals out of the trigger's subtree. The mock must
+// too, or "the pill itself does not render the chip" would pass vacuously.
 vi.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
   TooltipTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
-  TooltipContent: ({ children }: { children: ReactNode }) => <div>{children}</div>
+  TooltipContent: ({ children }: { children: ReactNode }) =>
+    createPortal(<div data-testid="tooltip-content">{children}</div>, document.body)
 }))
 
 import { DictationIndicator } from './DictationIndicator'
@@ -71,11 +75,21 @@ describe('DictationIndicator', () => {
     expect(fireEvent.mouseDown(stopButton)).toBe(false)
   })
 
-  it('shows the assigned shortcut alongside the stop button in toggle mode', () => {
+  it('shows the assigned shortcut in the stop button tooltip in toggle mode', () => {
     render(<DictationIndicator />)
 
-    expect(screen.getByText('⌘')).toBeTruthy()
-    expect(screen.getByText('E')).toBeTruthy()
+    const tooltip = screen.getByTestId('tooltip-content')
+    expect(tooltip.textContent).toContain('Stop dictation')
+    expect(tooltip.textContent).toContain('⌘')
+    expect(tooltip.textContent).toContain('E')
+  })
+
+  it('keeps the shortcut out of the always-visible pill, showing it only on hover', () => {
+    const { container } = render(<DictationIndicator />)
+    const pill = container.firstChild as HTMLElement
+
+    expect(pill.textContent).toContain('Listening...')
+    expect(pill.textContent).not.toContain('⌘')
   })
 
   it('omits the shortcut chip in hold mode, where release stops dictation', () => {
@@ -83,7 +97,7 @@ describe('DictationIndicator', () => {
     render(<DictationIndicator />)
 
     expect(screen.getByRole('button', { name: 'Stop dictation' })).toBeTruthy()
-    expect(screen.queryByText('⌘')).toBeNull()
+    expect(screen.getByTestId('tooltip-content').textContent).not.toContain('⌘')
   })
 
   it('hides the stop control once the session is already stopping', () => {
