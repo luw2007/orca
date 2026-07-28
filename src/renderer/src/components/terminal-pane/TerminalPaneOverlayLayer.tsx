@@ -16,7 +16,7 @@ import { useNativeChatToggleShortcut } from '../native-chat/use-native-chat-togg
 import { shouldDeferParkedPtyExitTabClose } from './terminal-parked-tab-watchers'
 import { useTerminalTabColdParking } from './use-terminal-tab-cold-parking'
 import { useTerminalOverlayPresentation } from './use-terminal-overlay-presentation'
-import { buildTerminalOverlayAssignments } from './terminal-overlay-assignments'
+import { buildTerminalOverlayAssignments, hasActiveTerminal } from './terminal-overlay-assignments'
 import {
   FALLBACK_RECT_MIN_CHANGE_PX,
   MIN_OVERLAY_FIT_HEIGHT_PX,
@@ -371,7 +371,6 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
     () => buildTerminalOverlayAssignments(groups, unifiedTabs),
     [groups, unifiedTabs]
   )
-
   const { parkedTerminalTabIds, coldParkedTerminalTabIds } = useTerminalTabColdParking({
     worktreeId,
     terminalTabs,
@@ -431,7 +430,7 @@ const TerminalPaneOverlayLayer = memo(function TerminalPaneOverlayLayer({
               isWorktreeActive={isWorktreeActive}
               isWorktreePresented={isWorktreePresented}
               isVisible={isVisible}
-              isPresented={isPresented}
+              isPresented={isPresented && hasActiveTerminal(assignments, assignment?.groupId)}
               isActive={isActive}
               activityTerminalPortal={activityTerminalPortal}
               onFocusOwningGroup={focusOwningGroup}

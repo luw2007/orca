@@ -21,3 +21,18 @@ export function buildTerminalOverlayAssignments(
   }
   return assignments
 }
+
+export function hasActiveTerminal(
+  assignments: ReadonlyMap<string, TerminalOverlayAssignment>,
+  groupId: string | undefined
+): boolean {
+  if (!groupId) {
+    return false
+  }
+  for (const assignment of assignments.values()) {
+    if (assignment.groupId === groupId && assignment.isActiveInGroup) {
+      return true
+    }
+  }
+  return false
+}
