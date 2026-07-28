@@ -1847,7 +1847,8 @@ function shouldSuppressCodexAutoApprovalSyntheticTitleFromHook(args: {
   )
 }
 
-app.whenReady().then(async () => {
+// Why: no .catch() on purpose — a startup throw must stay an unhandled rejection (loud) rather than be swallowed; `void` only silences no-floating-promises.
+void app.whenReady().then(async () => {
   logStartupMilestone('app-ready')
   // Why: install certificate decisions before any webview or headless window issues its first TLS request.
   app.on(
