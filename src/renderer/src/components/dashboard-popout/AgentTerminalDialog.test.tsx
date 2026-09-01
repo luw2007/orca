@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type {
   DashboardCard,
   DashboardCardTerminalInput
@@ -27,7 +27,9 @@ vi.mock('./AgentTerminalPreview', () => ({
       data-pty-id={ptyId}
       data-terminal-input={terminalInput === null ? 'null' : JSON.stringify(terminalInput)}
       className={className}
-    />
+    >
+      <textarea data-testid="preview-terminal-input" className="xterm" />
+    </div>
   )
 }))
 
@@ -136,6 +138,28 @@ describe('AgentTerminalDialog', () => {
       tabId: 'tab1',
       leafId: 'leaf1'
     })
+  })
+
+  it('opens in inspection mode and lets bare Escape close the dialog', async () => {
+    const onOpenChange = vi.fn()
+    render(<AgentTerminalDialog card={card()} onOpenChange={onOpenChange} onReveal={() => {}} />)
+
+    const title = screen.getByRole('heading', { name: 'wt' })
+    await waitFor(() => expect(title).toHaveFocus())
+
+    fireEvent.keyDown(title, { key: 'Escape' })
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('leaves Escape to the terminal after the user focuses it', () => {
+    const onOpenChange = vi.fn()
+    render(<AgentTerminalDialog card={card()} onOpenChange={onOpenChange} onReveal={() => {}} />)
+
+    const terminalInput = screen.getByTestId('preview-terminal-input')
+    terminalInput.focus()
+    fireEvent.keyDown(terminalInput, { key: 'Escape' })
+
+    expect(onOpenChange).not.toHaveBeenCalled()
   })
 
   it('reuses the terminal surface as a non-modal adjacent panel', () => {

@@ -10,6 +10,7 @@ const terminalHarness = vi.hoisted(() => ({
     writeCallbacks: (() => void)[]
     onDataListener: ((data: string) => void) | null
     dispose: ReturnType<typeof vi.fn>
+    focus: ReturnType<typeof vi.fn>
     resize: ReturnType<typeof vi.fn>
     reset: ReturnType<typeof vi.fn>
     paste: ReturnType<typeof vi.fn>
@@ -553,7 +554,7 @@ describe('AgentTerminalPreview', () => {
     expect(terminal.input).not.toHaveBeenCalled()
   })
 
-  it('keeps the existing terminal visible while a resync snapshot is captured', async () => {
+  it('keeps the existing terminal visible without taking focus during resync', async () => {
     let resolveRefresh!: (value: {
       snapshot: { data: string; cols: number; rows: number; seq: number }
       replay: string[]
@@ -572,6 +573,12 @@ describe('AgentTerminalPreview', () => {
     const view = render(<AgentTerminalPreview ptyId="pty-1" />)
     await waitFor(() => expect(terminalHarness.instances).toHaveLength(1))
     const terminal = terminalHarness.instances[0]!
+    expect(terminal.focus).not.toHaveBeenCalled()
+    expect(view.container.firstElementChild).toHaveClass(
+      'focus-within:ring-1',
+      'focus-within:ring-inset',
+      'focus-within:ring-ring'
+    )
 
     act(() => emitData?.({ type: 'resync', ptyId: 'pty-1' }))
     await waitFor(() => expect(connect).toHaveBeenCalledTimes(2))
@@ -591,6 +598,7 @@ describe('AgentTerminalPreview', () => {
     expect(terminalHarness.instances).toHaveLength(1)
     expect(terminal.dispose).not.toHaveBeenCalled()
     expect(view.queryByText(/No live terminal/)).not.toBeInTheDocument()
+    expect(terminal.focus).not.toHaveBeenCalled()
   })
 
   it('disposes a stale terminal when resync confirms the pty is gone', async () => {
