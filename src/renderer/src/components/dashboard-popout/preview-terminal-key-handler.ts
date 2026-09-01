@@ -28,6 +28,7 @@ export function installPreviewTerminalKeyHandler(args: {
   terminal: Terminal
   claimImeKeyEvent: (event: KeyboardEvent) => boolean
   pasteClipboardText: (activeElement: Element | null, source: 'keyboard') => void
+  onClose?: () => void
   sendInput: (data: string) => void
   /** Everything but optionKeyLocations, which this installer tracks itself. */
   getShortcutContext: () => Omit<PreviewShortcutContext, 'optionKeyLocations'>
@@ -199,8 +200,10 @@ export function installPreviewTerminalKeyHandler(args: {
       // `default` so a newly added action has to be classified here, not
       // silently swallowed.
       case 'clearActivePane':
-      case 'clearPaneTitle':
       case 'closeActivePane':
+        args.onClose?.()
+        return consumeEvent(event)
+      case 'clearPaneTitle':
       case 'copySelection':
       case 'equalizePaneSizes':
       case 'focusPane':

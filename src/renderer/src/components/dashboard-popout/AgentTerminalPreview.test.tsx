@@ -2,7 +2,7 @@
 
 import '@testing-library/jest-dom/vitest'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest'
 
 const terminalHarness = vi.hoisted(() => ({
   instances: [] as {
@@ -10,7 +10,7 @@ const terminalHarness = vi.hoisted(() => ({
     writeCallbacks: (() => void)[]
     onDataListener: ((data: string) => void) | null
     dispose: ReturnType<typeof vi.fn>
-    focus: ReturnType<typeof vi.fn>
+    focus: Mock
     resize: ReturnType<typeof vi.fn>
     reset: ReturnType<typeof vi.fn>
     paste: ReturnType<typeof vi.fn>
@@ -552,6 +552,29 @@ describe('AgentTerminalPreview', () => {
 
     expect(handled).toBe(true)
     expect(terminal.input).not.toHaveBeenCalled()
+  })
+
+  it('closes the preview on the configured pane-close shortcut', async () => {
+    platformState.value = 'darwin'
+    const onClose = vi.fn()
+    render(<AgentTerminalPreview ptyId="pty-1" onClose={onClose} />)
+    await waitFor(() => expect(terminalHarness.instances).toHaveLength(1))
+    const terminal = terminalHarness.instances[0]!
+    await waitFor(() => expect(terminal.customKeyHandler).not.toBeNull())
+
+    const keydown = new KeyboardEvent('keydown', {
+      key: 'w',
+      code: 'KeyW',
+      metaKey: true,
+      cancelable: true
+    })
+    const handled = terminal.customKeyHandler!(keydown)
+
+    expect(handled).toBe(false)
+    expect(keydown.defaultPrevented).toBe(true)
+    expect(onClose).toHaveBeenCalledOnce()
+    expect(terminal.input).not.toHaveBeenCalled()
+    expect(input).not.toHaveBeenCalled()
   })
 
   it('keeps the existing terminal visible without taking focus during resync', async () => {
