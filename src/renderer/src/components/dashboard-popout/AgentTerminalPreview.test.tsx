@@ -576,6 +576,28 @@ describe('AgentTerminalPreview', () => {
     expect(terminal.input).not.toHaveBeenCalled()
     expect(input).not.toHaveBeenCalled()
   })
+  it('keeps unrelated pane shortcuts from closing the preview', async () => {
+    platformState.value = 'darwin'
+    const onClose = vi.fn()
+    render(<AgentTerminalPreview ptyId="pty-1" onClose={onClose} />)
+    await waitFor(() => expect(terminalHarness.instances).toHaveLength(1))
+    const terminal = terminalHarness.instances[0]!
+    await waitFor(() => expect(terminal.customKeyHandler).not.toBeNull())
+
+    const keydown = new KeyboardEvent('keydown', {
+      key: 'k',
+      code: 'KeyK',
+      metaKey: true,
+      cancelable: true
+    })
+    const handled = terminal.customKeyHandler!(keydown)
+
+    expect(handled).toBe(false)
+    expect(keydown.defaultPrevented).toBe(true)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(terminal.input).not.toHaveBeenCalled()
+    expect(input).not.toHaveBeenCalled()
+  })
 
   it('keeps the existing terminal visible without taking focus during resync', async () => {
     let resolveRefresh!: (value: {
