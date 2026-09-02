@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef } from 'react'
 import { SquareArrowOutUpRight, XIcon } from 'lucide-react'
 import { AgentIcon } from '@/lib/agent-catalog'
 import { agentTypeToIconAgent, formatAgentTypeLabel } from '@/lib/agent-status'
@@ -164,6 +164,12 @@ export function AgentTerminalPanel({
   className?: string
 }): React.JSX.Element {
   const titleId = useId()
+
+  useLayoutEffect(() => {
+    const returnFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    return () => returnFocus?.focus()
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
